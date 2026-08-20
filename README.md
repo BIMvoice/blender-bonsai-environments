@@ -138,6 +138,30 @@ Launch each one and install its Bonsai variant through **Edit > Preferences > Ge
 
 ---
 
+---
+
+# Where to get each Bonsai build
+
+**Stable.** Blender's own extensions platform. In Blender: Edit > Preferences > Get Extensions, search for Bonsai, install.
+
+**Unstable.** The daily development builds. These are published as a separate extension repository which you add in Preferences > Get Extensions > Repositories. Check the Bonsai documentation for the current repository URL, since it changes less often than it moves.
+
+**BonsaiPR.** An unofficial build by falken10vdl that bundles open pull requests, so you can test a fix before it is merged. Two references, and they complement each other:
+
+- Written steps with screenshots: <https://github.com/falken10vdl/bonsaiPR#installation-with-automated-updates>
+- Video walkthrough: <https://youtu.be/j5LAJSVNxmU>
+
+Worth knowing about BonsaiPR before you install it:
+
+- Blender **checks** for new BonsaiPR builds on startup and tells you when one exists, but it does **not** install them for you. You click Update.
+- falken10vdl's own instructions begin by telling you to disable the regular Bonsai first. **With the setup in this guide you do not need to**, because each build sits in its own profile and they cannot see each other. That step exists precisely because of the problem this guide solves.
+
+## The trap this setup avoids
+
+If you install BonsaiPR alongside regular Bonsai in the same Blender profile, they share one `site-packages` folder. Disabling BonsaiPR then deletes the Python packages it installed there, including `ifcopenshell` and every other dependency, which leaves the regular Bonsai unable to start at all, with no interface and no obvious cause.
+
+The recovery is to enable the regular Bonsai extension again so Blender re-extracts its bundled packages. It is a genuinely confusing failure, and separate profiles make it impossible.
+
 # The live development link
 
 Only needed if you want an environment running code straight from a git checkout. Skip this if you just want the released builds.
