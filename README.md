@@ -230,6 +230,15 @@ One Blender and several profiles keeps the comparison honest.
 
 ---
 
+# Setting this up with an AI assistant
+
+If you use Claude Code, Codex, Gemini CLI or a similar tool, point it at
+[AGENTS.md](AGENTS.md). It contains step by step instructions written for
+agents, including the two steps that cannot be automated and must be handed
+back to you.
+
+---
+
 # Credits and corrections
 
 Written up from a working macOS setup. The Windows half is untested by the author, so corrections are genuinely welcome. Issues and pull requests are open.
