@@ -14,13 +14,13 @@ Blender extensions install their Python packages into a single shared folder per
 
 Blender keeps everything it knows about you, meaning add-ons, preferences and Python packages, in one user folder. Point it at a different folder and you get a completely fresh Blender.
 
-That is the whole trick. Everything below is applying it four times.
+That is the whole trick. Everything below is applying it a few times.
 
 ## You install Blender once
 
-This is the usual first question, so to be clear: **you do not need four copies of Blender.**
+This is the usual first question, so to be clear: **you do not need several copies of Blender.**
 
-Think of it as one application with four separate user accounts. The program is installed once. Each account has its own add-ons and settings and cannot see the others'.
+Think of it as one application with several separate user accounts. The program is installed once. Each account has its own add-ons and settings and cannot see the others'.
 
 Two consequences worth knowing:
 
@@ -37,210 +37,214 @@ Not Blender. A Blender **profile**, which looks like this:
 <environment folder>/scripts      your own scripts
 ```
 
-Expect a few hundred MB per environment once Bonsai is installed. That is the cost of them being genuinely independent, and still far less than several Blender installs.
+Expect roughly 600 MB per environment once Bonsai is installed.
+
+## Which build should be your normal Blender?
+
+Your default Blender, the one in Applications or the Start menu, is what opens when you double-click a `.blend` or `.ifc`, or open something a colleague sent you. **That happens by accident, so it should be a build that is safe to open real project work in.**
+
+The rule worth following: **your most-used build that is safe for real work**, not simply your most-used build.
+
+For most people that is stable or unstable. A live development build is a poor default, because a client file could open in half-finished code that might write malformed IFC without visibly failing. Development work is deliberate anyway, so it costs nothing to put it behind its own icon.
+
+## Where to put the environment folders
+
+Anywhere you like, but **avoid a folder that syncs to the cloud.**
+
+On macOS, if you have iCloud "Desktop and Documents" sync enabled, putting these in `~/Documents` will silently start uploading gigabytes of Blender profiles. The same applies to OneDrive or Dropbox folders on Windows.
+
+If you are unsure, use a plain folder in your home directory such as `~/BlenderEnvs` or `C:\BlenderEnvs`. The examples below use `Documents` for readability; substitute your own path.
 
 ---
 
 # macOS
 
-Tested on macOS with Blender 5.2.
+Tested with Blender 5.2 on macOS.
 
 ## 1. Make the folders
 
-Open Terminal and run:
-
 ```bash
-mkdir -p ~/Documents/"Blender Environments"/{stable,unstable,pr,dev}
+mkdir -p ~/Documents/"Blender Environments"/{stable,pr,dev}
 ```
+
+Only make folders for the variants that are **not** your default Blender. If your normal Blender is already unstable, you do not need an `unstable` folder.
 
 ## 2. Set up each variant, one at a time
 
-Finish each one completely before starting the next.
-
-**Stable:**
-
 ```bash
 BLENDER_USER_RESOURCES=~/Documents/"Blender Environments"/stable \
   /Applications/Blender.app/Contents/MacOS/Blender
 ```
 
-Blender opens looking brand new, because it is. Go to **Edit > Preferences > Get Extensions**, search for Bonsai, install it. Quit Blender.
+Blender opens looking brand new, because it is. Install that variant through **Edit > Preferences > Get Extensions**, then quit. Repeat with `pr` and `dev` in the path.
 
-**Unstable:** same command with `unstable` in the path. Add the Bonsai unstable repository in Preferences, install from it, quit.
+For `dev`, install **normal Bonsai** for now. That puts the compiled binary in place, which the live link section needs.
 
-**BonsaiPR:** same command with `pr`. Install the BonsaiPR build, either from its repository or by dragging in the extension file. Quit.
+## 3. Make proper app launchers
 
-**Dev:** same command with `dev`. Install **normal Bonsai** here for now. This is deliberate: it puts the compiled binary in place, which the live link section needs. Quit.
+A `.app` bundle can be pinned to the Dock, found in Spotlight, and opens no Terminal window.
 
-## 3. Make them double-clickable
-
-Open **TextEdit**, choose **Format > Make Plain Text**, and type:
+Create `Bonsai Stable.app/Contents/MacOS/launch` containing:
 
 ```bash
 #!/bin/bash
-BLENDER_USER_RESOURCES=~/Documents/"Blender Environments"/stable \
-  /Applications/Blender.app/Contents/MacOS/Blender
+exec /usr/bin/open -n -a "/Applications/Blender.app" \
+  --env "BLENDER_USER_RESOURCES=$HOME/Documents/Blender Environments/stable"
 ```
 
-Save it into your `Blender Environments` folder as `Bonsai Stable.command`. Repeat for the other three, changing both the folder name and the file name.
+**Use `open` rather than running Blender's binary directly.** This matters for two reasons that are not obvious:
 
-| File name | Folder |
-|---|---|
-| `Bonsai Stable.command` | `stable` |
-| `Bonsai Unstable.command` | `unstable` |
-| `Bonsai PR.command` | `pr` |
-| `Bonsai Dev.command` | `dev` |
+- Running the binary inside your wrapper gives you **two Dock icons**, the wrapper and Blender.
+- More importantly, it makes macOS treat Blender as a **new, unknown application**, which is then denied access to protected folders such as Documents. The symptom is a `Repository Alert: Operation not permitted` error inside Blender. Using `open` keeps Blender's own identity and its existing permissions.
 
-Then once, in Terminal:
+`Contents/Info.plist` needs at minimum a `CFBundleExecutable` of `launch`, plus `CFBundleName`, `CFBundleIdentifier` and `CFBundlePackageType` of `APPL`. Make `launch` executable with `chmod +x`.
+
+## 4. Add a console launcher for logs
+
+The apps hide Blender's output. When you want to see Python errors, tracebacks or your own `print()` calls, use a `.command` file that runs Blender **inside** Terminal:
 
 ```bash
-chmod +x ~/Documents/"Blender Environments"/*.command
+#!/bin/bash
+export BLENDER_USER_RESOURCES="$HOME/Documents/Blender Environments/dev"
+"/Applications/Blender.app/Contents/MacOS/Blender" "$@"
+echo "Blender exited with status $?"
+read -p "Press return to close."
 ```
 
-Now they launch from Finder or the Dock. That `chmod` is the only Terminal step you cannot avoid, and it is once, forever.
+The trailing `read` keeps the window open so a crash message does not vanish with it. `chmod +x` this too.
+
+For your default Blender, use the same file without the `export` line.
 
 ---
 
 # Windows
 
-**Not tested by the author.** The mechanism is identical and the environment variable is the same; the paths and the launcher format differ. Corrections via issues or pull requests are welcome.
-
-Adjust `5.2` and the install path to match your Blender.
+**Not tested by the author.** The mechanism is identical and the environment variable is the same; the paths and launcher format differ. Corrections via issues or pull requests are welcome.
 
 ## 1. Make the folders
 
-In File Explorer, create:
+```
+C:\BlenderEnvs\stable
+C:\BlenderEnvs\pr
+C:\BlenderEnvs\dev
+```
 
-```
-C:\Users\<you>\Documents\Blender Environments\stable
-C:\Users\<you>\Documents\Blender Environments\unstable
-C:\Users\<you>\Documents\Blender Environments\pr
-C:\Users\<you>\Documents\Blender Environments\dev
-```
+Avoid OneDrive-synced locations.
 
 ## 2. Make a launcher for each
 
-Open **Notepad** and type, on one line each:
+In Notepad, save as `Bonsai Stable.bat` with **All Files** as the type:
 
 ```bat
 @echo off
-set "BLENDER_USER_RESOURCES=%USERPROFILE%\Documents\Blender Environments\stable"
+set "BLENDER_USER_RESOURCES=C:\BlenderEnvs\stable"
 start "" "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 ```
 
-Save as `Bonsai Stable.bat`, choosing **All Files** as the type so Notepad does not add `.txt`. Repeat for the other three, changing the folder name.
-
-Double-click the file to launch that environment. Right-click and **Pin to Start** if you want them handy.
+For a version that shows the log, drop the `start ""` and call `blender.exe` directly, then add `pause` at the end.
 
 ## 3. Install a Bonsai build in each
 
-Launch each one and install its Bonsai variant through **Edit > Preferences > Get Extensions**, exactly as on macOS. What you install goes only into that environment.
-
----
+Launch each one and install its variant through **Edit > Preferences > Get Extensions**.
 
 ---
 
 # Where to get each Bonsai build
 
-**Stable.** Blender's own extensions platform. In Blender: Edit > Preferences > Get Extensions, search for Bonsai, install.
+**Stable.** Blender's own extensions platform. Edit > Preferences > Get Extensions, search Bonsai.
 
-**Unstable.** The daily development builds. These are published as a separate extension repository which you add in Preferences > Get Extensions > Repositories. Check the Bonsai documentation for the current repository URL, since it changes less often than it moves.
+**Unstable.** Add this repository under Preferences > Get Extensions > Repositories:
 
-**BonsaiPR.** An unofficial build by falken10vdl that bundles open pull requests, so you can test a fix before it is merged. Two references, and they complement each other:
+```
+https://raw.githubusercontent.com/IfcOpenShell/bonsai_unstable_repo/main/index.json
+```
+
+**BonsaiPR.** An unofficial build by falken10vdl bundling open pull requests, so you can test a fix before it is merged:
+
+```
+https://raw.githubusercontent.com/falken10vdl/bonsaiPR/refs/heads/main/index.json
+```
+
+Two references worth reading together:
 
 - Written steps with screenshots: <https://github.com/falken10vdl/bonsaiPR#installation-with-automated-updates>
 - Video walkthrough: <https://youtu.be/j5LAJSVNxmU>
 
-Worth knowing about BonsaiPR before you install it:
+Things worth knowing about BonsaiPR:
 
-- Blender **checks** for new BonsaiPR builds on startup and tells you when one exists, but it does **not** install them for you. You click Update.
-- falken10vdl's own instructions begin by telling you to disable the regular Bonsai first. **With the setup in this guide you do not need to**, because each build sits in its own profile and they cannot see each other. That step exists precisely because of the problem this guide solves.
+- Blender **checks** for new builds on startup and tells you when one exists, but it does **not** install them for you. You click Update.
+- Its Python module is named **`bonsaiPR`**, not `bonsai`. That is why it can coexist with regular Bonsai, and it is worth remembering when you read a traceback and wonder why the paths say `bonsaiPR`.
+- falken10vdl's own instructions begin by telling you to disable regular Bonsai first. **With this setup you do not need to**, because each build sits in its own profile. That step exists precisely because of the problem this guide solves.
 
 ## The trap this setup avoids
 
-If you install BonsaiPR alongside regular Bonsai in the same Blender profile, they share one `site-packages` folder. Disabling BonsaiPR then deletes the Python packages it installed there, including `ifcopenshell` and every other dependency, which leaves the regular Bonsai unable to start at all, with no interface and no obvious cause.
+If you install BonsaiPR alongside regular Bonsai in the same profile, they share one `site-packages`. Disabling BonsaiPR then deletes the Python packages it installed there, including `ifcopenshell` and every other dependency, leaving regular Bonsai unable to start at all, with no interface and no obvious cause.
 
-The recovery is to enable the regular Bonsai extension again so Blender re-extracts its bundled packages. It is a genuinely confusing failure, and separate profiles make it impossible.
+The recovery is to enable regular Bonsai again so Blender re-extracts its bundled packages. Separate profiles make it impossible.
+
+---
 
 # The live development link
 
-Only needed if you want an environment running code straight from a git checkout. Skip this if you just want the released builds.
+Only needed if you want an environment running code straight from a git checkout.
 
-Bonsai is mostly plain Python, but part of it is a **compiled binary** that only comes from a real install. So you install Bonsai normally first, then replace only the Python with links to your checkout.
+## Use the project's own script
 
-## macOS
+IfcOpenShell ships one, and it is better than doing this by hand:
 
-```bash
-cd ~/Documents/"Blender Environments"/dev/extensions/.local/lib/python3.13/site-packages
+```
+src/bonsai/scripts/dev_environment.py
 ```
 
-Keep the originals so this is reversible:
+From its own documentation:
 
-```bash
-mv bonsai bonsai.stock
-mv ifcopenshell ifcopenshell.stock
-```
+> Script links existing Bonsai installation to the provided IfcOpenShell repository.
 
-Point the names at your checkout, adjusting the paths to your own:
+It handles the platform differences and the compiled binaries, and has a `--skip-binaries` flag if you already have current ones. Install Bonsai normally in the target environment first, then run it.
 
-```bash
-ln -s /path/to/IfcOpenShell/src/bonsai/bonsai bonsai
-ln -s /path/to/IfcOpenShell/src/ifcopenshell-python/ifcopenshell ifcopenshell
-```
+## What it does, for the curious
 
-Copy the compiled binary into the checkout, since a source tree does not contain one:
+Bonsai is mostly plain Python, but part of it is a **compiled binary** that only comes from a real install. So the pure Python packages are replaced with links to your checkout, while the binary is copied into the checkout.
 
-```bash
-cp ifcopenshell.stock/_ifcopenshell_wrapper*.so \
-   /path/to/IfcOpenShell/src/ifcopenshell-python/ifcopenshell/
-cp ifcopenshell.stock/ifcopenshell_wrapper.py \
-   /path/to/IfcOpenShell/src/ifcopenshell-python/ifcopenshell/
-```
+Roughly, in `<profile>/extensions/.local/lib/python<X.Y>/site-packages`:
 
-To undo: delete the two links and rename the `.stock` folders back.
+- rename `bonsai` and `ifcopenshell` aside, keeping them rather than deleting
+- symlink both names to `<checkout>/src/bonsai/bonsai` and `<checkout>/src/ifcopenshell-python/ifcopenshell`
+- copy `_ifcopenshell_wrapper*` and `ifcopenshell_wrapper.py` from the kept copies into the checkout
 
-## Windows
+On Windows the compiled file is `.pyd` rather than `.so`, and directory links need Developer Mode or an Administrator prompt.
 
-Same idea, but Windows needs either **Developer Mode** enabled or an **Administrator** command prompt to create directory links.
+## Two things that will confuse you later
 
-```bat
-cd "%USERPROFILE%\Documents\Blender Environments\dev\extensions\.local\lib\python3.13\site-packages"
+**The extension stays registered against whichever repository you installed from.** Blender uses that entry to enable the add-on, while Python imports through the symlink. It works, but **do not click Update on Bonsai in that environment**: it will download a normal build over the top and silently replace your live link. Your edits will simply stop having any effect, with no error.
 
-ren bonsai bonsai.stock
-ren ifcopenshell ifcopenshell.stock
-
-mklink /D bonsai "C:\path\to\IfcOpenShell\src\bonsai\bonsai"
-mklink /D ifcopenshell "C:\path\to\IfcOpenShell\src\ifcopenshell-python\ifcopenshell"
-
-copy ifcopenshell.stock\_ifcopenshell_wrapper*.pyd "C:\path\to\IfcOpenShell\src\ifcopenshell-python\ifcopenshell\"
-copy ifcopenshell.stock\ifcopenshell_wrapper.py "C:\path\to\IfcOpenShell\src\ifcopenshell-python\ifcopenshell\"
-```
-
-Note the compiled file is `.pyd` on Windows rather than `.so`.
+**A source checkout reports its version as `0.0.0`.** That is normal. Bonsai's debug panel will show the real commit hash and branch, which is the better thing to check.
 
 ---
 
 # Confirm which environment you are in
 
-The windows look identical. Before reporting a bug, check which build you are actually running. Open Blender's Python console and run:
+The windows look identical. Before reporting a bug, check what you are actually running. In Blender's Python console:
 
 ```python
 import bonsai; print(bonsai.__file__)
 ```
 
-The folder name in the printed path tells you immediately whether you are in `stable`, `unstable`, `pr` or `dev`.
+For BonsaiPR, `import bonsaiPR` instead.
+
+The folder in the printed path tells you which environment you are in.
 
 ---
 
 # Things that catch people out
 
-**The Python version is in that path.** `python3.13` is specific to Blender 5.2. A different Blender uses a different number. This matters most for the compiled binary, which is built for one exact Python version: copying a `cpython-313` file into a Blender running Python 3.11 will not import.
+**The Python version is in that path.** `python3.13` is specific to Blender 5.2. A different Blender uses a different number, and the compiled binary is built for one exact Python version.
 
-**Your existing Blender profile is untouched.** Everything here lives in the new folders. Launching Blender normally still behaves exactly as it did before, with whatever you already had installed.
+**Your existing Blender profile is untouched** by any of this, unless you deliberately link it.
 
-**The dev environment follows whichever branch your checkout is on.** If the compiled binary came from one version of the code and your checkout has moved to an incompatible one, imports will fail. Keep the checkout on a branch matching your installed build.
+**Each environment downloads its own dependencies.** Around 600 MB each.
 
-**Check that a test build supports your Blender version** before assuming it will run. Not every Bonsai variant targets every Blender release.
+**Check a test build supports your Blender version** before assuming the setup is broken.
 
 ---
 
@@ -256,10 +260,7 @@ One Blender and several profiles keeps the comparison honest.
 
 # Setting this up with an AI assistant
 
-If you use Claude Code, Codex, Gemini CLI or a similar tool, point it at
-[AGENTS.md](AGENTS.md). It contains step by step instructions written for
-agents, including the two steps that cannot be automated and must be handed
-back to you.
+If you use Claude Code, Codex, Gemini CLI or a similar tool, point it at [AGENTS.md](AGENTS.md). It contains step by step instructions written for agents, including the two steps that cannot be automated and must be handed back to you.
 
 ---
 
