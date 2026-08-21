@@ -84,6 +84,10 @@ For `dev`, install **normal Bonsai** for now. That puts the compiled binary in p
 
 A `.app` bundle can be pinned to the Dock, found in Spotlight, and opens no Terminal window.
 
+**Make one only for the environments that are not your default Blender.** Your normal Blender already opens the build in its own profile, so a launcher for that one would be a second icon doing exactly the same thing. A silent duplicate is worse than an uneven-looking folder, because the point of this setup is always knowing which environment you are in.
+
+So if your default Blender runs unstable, you want three launchers, not four.
+
 Create `Bonsai Stable.app/Contents/MacOS/launch` containing:
 
 ```bash
@@ -113,7 +117,9 @@ read -p "Press return to close."
 
 The trailing `read` keeps the window open so a crash message does not vanish with it. `chmod +x` this too.
 
-For your default Blender, use the same file without the `export` line.
+For your default Blender, use the same file without the `export` line. That one **is** worth having even though it has no `.app`, because it does something the normal Blender icon cannot: it shows you the log.
+
+Name all of them consistently. If three are called `Bonsai Stable`, `Bonsai PR` and `Bonsai Dev`, the fourth should be `Bonsai Unstable`, not `Blender Unstable`, even though it launches the default profile. From your side they are all Bonsai environments.
 
 ---
 
