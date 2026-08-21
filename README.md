@@ -252,9 +252,15 @@ The folder in the printed path tells you which environment you are in.
 
 You can, and it needs no setup at all, because Blender already separates profiles by version.
 
-The catch is that you are then changing two things at once. If something breaks, you cannot tell whether it was the Bonsai build or the Blender version. You would also be maintaining several Blender installs forever.
+There are three catches, and the first is the one people feel most.
 
-One Blender and several profiles keeps the comparison honest.
+**You get frozen on old Blender versions.** To keep an old Bonsai around you have to keep the Blender that came with it, so you lose everything that improved in Blender itself in the meantime. Tools, performance, interface changes, none of which have anything to do with BIM. Your testing setup ends up holding you back from the thing you actually model in.
+
+**You change two variables at once.** When something breaks you cannot tell whether it was the Bonsai build or the Blender version, because both differ. That is precisely the question you were trying to answer.
+
+**You maintain several Blender installs forever**, updating each one separately.
+
+One Blender and several profiles avoids all three. Every version runs on the same current Blender, so the only thing that differs is Bonsai.
 
 ---
 
